@@ -1,5 +1,5 @@
 """
-Vinheria Agnello - Microsservico de Rastreamento de Vinhos (Sprint 6 -> Sprint 7)
+Vinheria Agnello - Microsservico de Rastreamento de Vinhos
 Guarda o estado de cada lote (da uva a venda). Nao fica exposto para fora da rede:
 so responde a quem apresenta um token JWT valido emitido para o servico "rastreamento".
 """

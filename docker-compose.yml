@@ -1,4 +1,4 @@
-# Vinheria Agnello - Sprint 7: rede com DNS/DHCP, 2 microsservicos, gateway HTTPS,
+# Vinheria Agnello: rede com DNS/DHCP, 2 microsservicos, gateway HTTPS,
 # servidor de publicacao (simula o IIS) e Jenkins.
 name: vinheria
 

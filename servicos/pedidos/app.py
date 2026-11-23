@@ -1,5 +1,5 @@
 """
-Vinheria Agnello - Microsservico de Gestao de Pedidos (Sprint 6 -> Sprint 7)
+Vinheria Agnello - Microsservico de Gestao de Pedidos
 - POST /auth/login: usuario e senha -> token JWT (senha guardada como hash)
 - GET/POST /pedidos: exigem o token do usuario
 - Antes de registrar um pedido, consulta o lote no microsservico de Rastreamento

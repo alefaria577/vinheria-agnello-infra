@@ -1,4 +1,4 @@
-// Pipeline de deploy da Vinheria Agnello (Sprint 7)
+// Pipeline de deploy da Vinheria Agnello
 pipeline {
     agent any
 

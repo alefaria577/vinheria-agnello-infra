@@ -1,4 +1,4 @@
-# Valida todo o ambiente da Vinheria Agnello (Sprint 7) de uma vez.
+# Valida todo o ambiente da Vinheria Agnello de uma vez.
 # Rodar na pasta vinheria-sprint7:   powershell -ExecutionPolicy Bypass -File demo\validar.ps1
 $script:ok = 0; $script:falhas = 0
 function Teste($nome, $condicao, $detalhe) {

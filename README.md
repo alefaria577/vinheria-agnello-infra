@@ -1,4 +1,4 @@
-# Vinheria Agnello · Sprint 7 (Fase 7)
+# Vinheria Agnello · Infraestrutura e deploy dos microsserviços
 
 Parte da arquitetura da Vinheria Agnello rodando em contêineres Docker:
 
@@ -19,7 +19,7 @@ Parte da arquitetura da Vinheria Agnello rodando em contêineres Docker:
    ```
    git init -b main
    git add .
-   git commit -m "Vinheria Agnello - Sprint 7"
+   git commit -m "Vinheria Agnello - infraestrutura e microsservicos"
    docker compose up -d --build
    ```
 3. Endereços no navegador:
