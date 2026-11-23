@@ -63,7 +63,7 @@ flowchart LR
 
 ---
 
-## ▶️ Como rodar
+## Como rodar
 
 Abra o **PowerShell** e execute:
 
@@ -92,6 +92,8 @@ Troque os dois valores e salve:
 docker compose up -d --build
 ```
 Na primeira vez leva alguns minutos (download das imagens). Confira com `docker compose ps`: os contêineres devem aparecer como **Up**. O Jenkins leva cerca de 1 minuto para abrir.
+
+> O Jenkins já vem pronto dentro do Docker (com os plugins e o usuário `admin`), sem precisar instalar o `jenkins.war`. Se houver outro Jenkins aberto no computador usando a porta 8080, feche a janela dele antes deste passo.
 
 **4. Valide tudo de uma vez**
 ```powershell
@@ -135,6 +137,22 @@ curl.exe -k -X POST https://localhost:8443/pedidos -H "Authorization: Bearer $to
 
 Resposta esperada: **201** (venda registrada). Na pasta `demo/` também há exemplos de lote bloqueado (`pedido-bloqueado.json` → **409**) e senha errada (`login-errado.json` → **401**).
 
+### No Postman ou Insomnia
+
+1. Desligue a verificação do certificado, que é de laboratório:
+   - **Postman:** *Settings* → *General* → **SSL certificate verification** desligado.
+   - **Insomnia:** *Preferences* → *General* → desmarque **Validate certificates**.
+2. **Login:** `POST https://localhost:8443/auth/login`, com *Body* → *raw* → *JSON*:
+   ```json
+   {"usuario": "vendedor", "senha": "Vinho@2026"}
+   ```
+   Copie o valor de `token` da resposta.
+3. **Venda:** `POST https://localhost:8443/pedidos`, aba **Authorization** → **Bearer Token** → cole o token, e *Body* → *raw* → *JSON*:
+   ```json
+   {"lote": "L2024-01", "quantidade": 6}
+   ```
+   Resposta: **201**. Com `"lote": "L2023-07"` (bloqueado pela qualidade), a resposta é **409**.
+
 O **Rastreamento** não tem porta aberta para fora: só o Pedidos chega nele, com um token de serviço que vale 2 minutos.
 
 ---
@@ -142,13 +160,13 @@ O **Rastreamento** não tem porta aberta para fora: só o Pedidos chega nele, co
 ## Pipeline no Jenkins
 
 1. Acesse http://localhost:8080 e entre com `admin` e a senha do `.env`.
-2. **Nova tarefa** → nome `vinheria-deploy` → **Pipeline** → **OK**.
+2. **Nova tarefa** (*New Item*) → nome `vinheria-deploy` → **Pipeline** → **OK**.
 3. Em **Pipeline**, escolha **Pipeline script from SCM** e preencha:
    - **SCM:** Git
    - **Repository URL:** `https://github.com/alefaria577/vinheria-agnello-infra.git`
    - **Branch:** `*/main`
    - **Script Path:** `Jenkinsfile`
-4. **Salvar** → **Construir agora**.
+4. **Salvar** (*Save*) → **Construir agora** (*Build Now*).
 
 Etapas: **Checkout → Build** (`echo "Deploy da Vinheria"`) **→ Testes → Segurança → Deploy**. Ao terminar, http://localhost:8088 mostra o número do build, o commit e a data do deploy.
 
@@ -178,7 +196,7 @@ docker run --rm -v "${PWD}:/app" -w /app python:3.12-slim sh -c "pip install -q 
 
 ---
 
-## 📁 Estrutura
+## Estrutura
 
 ```
 servicos/        rastreamento/ e pedidos/ (código + Dockerfile de cada serviço)
@@ -199,12 +217,12 @@ docker compose down        # para tudo
 docker compose down -v     # para tudo e apaga os dados do Jenkins (começa do zero)
 ```
 
-##  Observações
+## Observações
 
 | Sintoma | Solução |
 |---|---|
 | `Defina JWT_SEGREDO no arquivo .env` | O `.env` não foi criado: refaça o passo 2 |
 | `error during connect` / Docker não responde | Abra o Docker Desktop e espere "Engine running" |
-| `port is already allocated` | Outro programa usa a porta 8080, 8081, 8088 ou 8443: feche-o e rode `docker compose up -d` de novo |
+| `port is already allocated` ou `Ports are not available` | Outro programa usa a porta 8080, 8081, 8088 ou 8443 (por exemplo, um Jenkins iniciado pelo `jenkins.war`): feche-o e rode `docker compose up -d` de novo |
 | Jenkins não abre | Aguarde cerca de 1 minuto após subir e atualize a página |
 | Aviso de certificado no navegador | Esperado: o certificado é de laboratório. Clique em *Avançado* → *Continuar* |
