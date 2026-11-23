@@ -84,11 +84,21 @@ services:
     cap_add: [NET_ADMIN]
     depends_on: [dns]
     networks: [vinheria-net]
-    command: >
-      sh -c "sleep 5 && ip addr flush dev eth0 &&
-             udhcpc -i eth0 -x hostname:estacao-loja -t 10 -n &&
-             echo '=== IP recebido por DHCP ===' && ip -4 addr show eth0 && cat /etc/resolv.conf &&
-             sleep infinity"
+    volumes: ["./infra/estacao/dhcp.sh:/cfg/dhcp.sh:ro"]
+    command:
+      - sh
+      - -c
+      - |
+        tr -d '\r' < /cfg/dhcp.sh > /usr/local/bin/dhcp.sh && chmod +x /usr/local/bin/dhcp.sh
+        sleep 5
+        ip addr flush dev eth0
+        udhcpc -i eth0 -x hostname:estacao-loja -t 10 -n -s /usr/local/bin/dhcp.sh
+        echo '=== Configuracao recebida por DHCP ==='
+        ip -4 addr show eth0
+        ip route
+        echo '--- /etc/resolv.conf ---'
+        cat /etc/resolv.conf
+        sleep infinity
 
   # Opcional: grava o trafego entre Pedidos e Rastreamento para abrir no Wireshark
   captura:
