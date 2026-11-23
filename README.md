@@ -199,7 +199,7 @@ docker compose down        # para tudo
 docker compose down -v     # para tudo e apaga os dados do Jenkins (começa do zero)
 ```
 
-##  Problemas comuns
+##  Observações
 
 | Sintoma | Solução |
 |---|---|
