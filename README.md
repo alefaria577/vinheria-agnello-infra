@@ -14,19 +14,25 @@ Parte da arquitetura da Vinheria Agnello rodando em contêineres Docker:
 
 ## Como rodar (Windows + Docker Desktop)
 
-1. Copie `.env.example` para `.env` e troque os valores.
-2. No PowerShell, dentro desta pasta:
+1. Baixe o projeto:
    ```
-   git init -b main
-   git add .
-   git commit -m "Vinheria Agnello - infraestrutura e microsservicos"
+   git clone https://github.com/alefaria577/vinheria-agnello-infra.git
+   cd vinheria-agnello-infra
+   ```
+2. Copie `.env.example` para `.env` e troque os valores.
+3. Suba o ambiente:
+   ```
    docker compose up -d --build
    ```
-3. Endereços no navegador:
+4. Endereços no navegador:
    - Jenkins: http://localhost:8080 (usuário `admin`, senha do `.env`)
    - Publicação: http://localhost:8088
-   - Pedidos por HTTP (só para a demonstração): http://localhost:8081/health
+   - Pedidos por HTTP (só para a comparação no Wireshark): http://localhost:8081/health
    - Pedidos por HTTPS: https://localhost:8443/health (certificado de laboratório: aceite o aviso)
+5. Validação completa do ambiente:
+   ```
+   powershell -ExecutionPolicy Bypass -File demo\validar.ps1
+   ```
 
 ## Testes rápidos
 
@@ -46,7 +52,7 @@ Usuários de exemplo: `vendedor` / `Vinho@2026` e `gerente` / `Agnello@2026`.
 
 ## Pipeline do Jenkins
 
-Novo Item → **Pipeline** → *Pipeline script from SCM* → Git → Repository URL `/repo` → Branch `*/main` → Script Path `Jenkinsfile`.
+Nova tarefa → **Pipeline** → *Pipeline script from SCM* → Git → Repository URL `https://github.com/alefaria577/vinheria-agnello-infra.git` → Branch `*/main` → Script Path `Jenkinsfile`.
 Estágios: **Checkout → Build → Testes → Segurança → Deploy** (copia para `publicacao/releases/build-N`).
 
 ## Testes automáticos

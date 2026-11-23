@@ -6,6 +6,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends python3 python3
     git config --system --add safe.directory '*' && \
     mkdir -p /publicacao && chown jenkins:jenkins /publicacao
 USER jenkins
-ENV JAVA_OPTS="-Djenkins.install.runSetupWizard=false -Dhudson.plugins.git.GitSCM.ALLOW_LOCAL_CHECKOUT=true"
+ENV JAVA_OPTS="-Djenkins.install.runSetupWizard=false"
 RUN jenkins-plugin-cli --plugins workflow-aggregator git pipeline-stage-view
 COPY --chown=jenkins:jenkins admin.groovy /usr/share/jenkins/ref/init.groovy.d/admin.groovy

@@ -71,7 +71,6 @@ services:
     ports: ["8080:8080"]
     volumes:
       - jenkins_home:/var/jenkins_home
-      - ./:/repo:ro               # repositorio Git do projeto (Jenkins faz o checkout daqui)
       - ./publicacao:/publicacao  # pasta de publicacao (o deploy copia os arquivos para ca)
     networks:
       vinheria-net: { ipv4_address: 172.28.0.14 }
