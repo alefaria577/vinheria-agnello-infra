@@ -37,7 +37,7 @@ pipeline {
                 sh '''
                     echo "Verificando se ha segredos no repositorio..."
                     if git ls-files | grep -E '(^|/)\\.env$'; then echo "ERRO: .env versionado"; exit 1; fi
-                    if git grep -n "BEGIN .*PRIVATE KEY"; then echo "ERRO: chave privada no codigo"; exit 1; fi
+                    if git grep -nE "BEGIN [A-Z ]*PRIVATE KEY-----"; then echo "ERRO: chave privada no codigo"; exit 1; fi
                     echo "Nenhum segredo encontrado no codigo"
                 '''
             }
