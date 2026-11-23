@@ -1,0 +1,112 @@
+# Vinheria Agnello - Sprint 7: rede com DNS/DHCP, 2 microsservicos, gateway HTTPS,
+# servidor de publicacao (simula o IIS) e Jenkins.
+name: vinheria
+
+x-dns-interno: &dns-interno
+  dns: [172.28.0.2]
+  dns_search: [vinheria.local]
+
+services:
+  dns:
+    build: ./infra/dns
+    container_name: vinheria-dns
+    hostname: dns
+    cap_add: [NET_ADMIN]
+    networks:
+      vinheria-net: { ipv4_address: 172.28.0.2 }
+
+  rastreamento:
+    build: ./servicos/rastreamento
+    container_name: vinheria-rastreamento
+    hostname: rastreamento
+    environment:
+      JWT_SEGREDO: ${JWT_SEGREDO:?Defina JWT_SEGREDO no arquivo .env}
+    <<: *dns-interno
+    depends_on: [dns]
+    networks:
+      vinheria-net: { ipv4_address: 172.28.0.10 }
+    # sem "ports": so e acessivel de dentro da rede da Vinheria
+
+  pedidos:
+    build: ./servicos/pedidos
+    container_name: vinheria-pedidos
+    hostname: pedidos
+    environment:
+      JWT_SEGREDO: ${JWT_SEGREDO:?Defina JWT_SEGREDO no arquivo .env}
+      RASTREAMENTO_URL: http://rastreamento.vinheria.local:5001
+    <<: *dns-interno
+    depends_on: [dns, rastreamento]
+    ports: ["8081:5002"]          # HTTP aberto, so para a demonstracao no Wireshark
+    networks:
+      vinheria-net: { ipv4_address: 172.28.0.11 }
+
+  www:
+    image: nginx:1.27-alpine
+    container_name: vinheria-www
+    hostname: www
+    volumes: ["./publicacao:/usr/share/nginx/html:ro"]
+    ports: ["8088:80"]
+    networks:
+      vinheria-net: { ipv4_address: 172.28.0.12 }
+
+  gateway:
+    build: ./infra/gateway
+    container_name: vinheria-gateway
+    hostname: gateway
+    <<: *dns-interno
+    depends_on: [dns, pedidos]
+    restart: on-failure
+    ports: ["8443:443"]           # HTTPS (TLS)
+    networks:
+      vinheria-net: { ipv4_address: 172.28.0.13 }
+
+  jenkins:
+    build: ./infra/jenkins
+    container_name: vinheria-jenkins
+    hostname: jenkins
+    environment:
+      JENKINS_ADMIN_SENHA: ${JENKINS_ADMIN_SENHA:?Defina JENKINS_ADMIN_SENHA no arquivo .env}
+    <<: *dns-interno
+    depends_on: [dns]
+    ports: ["8080:8080"]
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - ./:/repo:ro               # repositorio Git do projeto (Jenkins faz o checkout daqui)
+      - ./publicacao:/publicacao  # pasta de publicacao (o deploy copia os arquivos para ca)
+    networks:
+      vinheria-net: { ipv4_address: 172.28.0.14 }
+
+  # Estacao de trabalho da loja: entra na rede sem IP e pede um ao DHCP
+  estacao:
+    image: alpine:3.20
+    container_name: vinheria-estacao
+    hostname: estacao-loja
+    cap_add: [NET_ADMIN]
+    depends_on: [dns]
+    networks: [vinheria-net]
+    command: >
+      sh -c "sleep 5 && ip addr flush dev eth0 &&
+             udhcpc -i eth0 -x hostname:estacao-loja -t 10 -n &&
+             echo '=== IP recebido por DHCP ===' && ip -4 addr show eth0 && cat /etc/resolv.conf &&
+             sleep infinity"
+
+  # Opcional: grava o trafego entre Pedidos e Rastreamento para abrir no Wireshark
+  captura:
+    image: alpine:3.20
+    container_name: vinheria-captura
+    profiles: [captura]
+    network_mode: "service:pedidos"
+    volumes: ["./captura:/captura"]
+    command: sh -c "apk add --no-cache tcpdump && tcpdump -i eth0 -s 0 -w /captura/servicos.pcap port 5001"
+
+networks:
+  vinheria-net:
+    name: vinheria-net
+    ipam:
+      config:
+        - subnet: 172.28.0.0/24
+          ip_range: 172.28.0.0/26    # IPs fixos dos servidores; o DHCP distribui .100 a .150
+          gateway: 172.28.0.1
+
+volumes:
+  jenkins_home:

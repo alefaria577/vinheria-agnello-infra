@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><title>Vinheria Agnello - Publicacao</title>
+<style>
+ body{font-family:Segoe UI,Arial,sans-serif;background:#f7f1ec;color:#2b1d1d;margin:0}
+ header{background:#6b1f2a;color:#fff;padding:24px 32px} h1{margin:0}
+ main{padding:24px 32px} table{border-collapse:collapse;background:#fff}
+ td,th{border:1px solid #d8c8c0;padding:8px 14px;text-align:left} th{background:#efe3dc}
+ .ok{color:#1b6e3a;font-weight:bold}
+</style>
+</head>
+<body>
+<header><h1>Vinheria Agnello</h1><p>Servidor de publicacao (simula o IIS) - deploy automatico pelo Jenkins</p></header>
+<main>
+<h2 class="ok">Deploy da Vinheria concluido</h2>
+<table>
+<tr><th>Build do Jenkins</th><td>#{{BUILD}}</td></tr>
+<tr><th>Commit publicado</th><td>{{COMMIT}}</td></tr>
+<tr><th>Data do deploy</th><td>{{DATA}}</td></tr>
+<tr><th>Pasta da versao</th><td>releases/build-{{BUILD}}</td></tr>
+</table>
+<h3>Microsservicos publicados</h3>
+<table>
+<tr><th>Servico</th><th>Nome no DNS</th><th>Porta</th></tr>
+<tr><td>Rastreamento de Vinhos</td><td>rastreamento.vinheria.local</td><td>5001 (somente rede interna)</td></tr>
+<tr><td>Gestao de Pedidos</td><td>pedidos.vinheria.local</td><td>5002 (HTTPS pelo gateway.vinheria.local:443)</td></tr>
+</table>
+</main>
+</body>
+</html>

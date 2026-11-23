@@ -1,0 +1,6 @@
+.env
+publicacao/*
+!publicacao/index.html
+captura/
+__pycache__/
+.venv/
