@@ -2,10 +2,20 @@
 
 Ambiente completo, em contêineres Docker, com dois microsserviços da Vinheria Agnello: uma rede própria com **DHCP e DNS**, **deploy automático com Jenkins** e **comunicação segura** (login com JWT e HTTPS).
 
-**O que este projeto demonstra**
--  **Rede e serviços:** rede isolada `172.28.0.0/24`, servidor DHCP + DNS (dnsmasq) e serviços que se encontram pelo nome (`*.vinheria.local`).
-- **DevOps:** pipeline no Jenkins que busca o código neste repositório, testa, verifica segredos e publica numa pasta que simula o IIS.
--  **Segurança:** login com token JWT, token próprio entre serviços, HTTPS com TLS 1.3 e comparação HTTP x HTTPS no Wireshark.
+## Sobre o projeto
+
+A **Vinheria Agnello** é uma loja de vinhos que organiza seus sistemas em **microsserviços**: pequenos programas independentes, cada um cuidando de uma parte do negócio. Este projeto monta, em um único computador, uma versão em miniatura dessa estrutura com dois deles:
+
+- **Rastreamento de Vinhos:** sabe quais lotes existem, a situação de cada um (disponível, em fermentação ou bloqueado) e quantas garrafas há.
+- **Gestão de Pedidos:** é onde o vendedor faz login e registra uma venda. Antes de vender, ele pergunta ao Rastreamento se aquele lote pode ser vendido.
+
+Em volta desses dois serviços, o projeto reproduz o que uma empresa tem no dia a dia:
+
+| Parte | O que acontece |
+|---|---|
+| **Rede** | Um servidor entrega endereço automaticamente para cada máquina (**DHCP**) e traduz nomes como `pedidos.vinheria.local` em endereços (**DNS**). Assim os serviços se encontram pelo nome. |
+| **Deploy automático** | O **Jenkins** pega o código deste repositório, testa, confere se não há senhas no código e publica a nova versão sozinho. |
+| **Segurança** | Só entra quem faz login (token **JWT**), os serviços se identificam entre si e o acesso é criptografado (**HTTPS**). Uma captura no **Wireshark** mostra a diferença: por HTTP a senha aparece; por HTTPS, não. |
 
 ---
 
@@ -25,6 +35,9 @@ flowchart LR
     PED & RAS & GW & EST -. "resolvem nomes" .-> DNS
 ```
 
+<details>
+<summary><b>Contêineres, nomes e IPs</b></summary>
+
 | Contêiner | Nome no DNS | IP | Função |
 |---|---|---|---|
 | `vinheria-dns` | dns.vinheria.local | 172.28.0.2 | Servidor **DNS + DHCP** (dnsmasq) |
@@ -34,6 +47,8 @@ flowchart LR
 | `vinheria-gateway` | gateway.vinheria.local | 172.28.0.13 | **HTTPS (TLS)** na frente do Pedidos |
 | `vinheria-jenkins` | jenkins.vinheria.local | 172.28.0.14 | **Jenkins** (pipeline de deploy) |
 | `vinheria-estacao` | estacao-loja.vinheria.local | DHCP (.100 a .150) | Estação da loja que recebe IP por **DHCP** |
+
+</details>
 
 **Tecnologias:** Docker Compose · Python 3.12 + Flask · PyJWT · dnsmasq · nginx · Jenkins · Wireshark
 
@@ -99,12 +114,9 @@ Resultado esperado: **`=== Resultado: 24 OK, 0 falha(s) ===`**
 ## DHCP e DNS
 
 ```powershell
-docker logs vinheria-estacao                                     # IP, gateway e DNS recebidos por DHCP
-docker exec vinheria-dns cat /var/lib/misc/dnsmasq.leases        # concessões do DHCP
-docker exec vinheria-estacao nslookup pedidos.vinheria.local     # nome de um serviço -> IP
-docker exec vinheria-estacao nslookup estacao-loja.vinheria.local  # a estação registrada no DNS pelo DHCP
-docker exec vinheria-estacao wget -qO- http://pedidos.vinheria.local:5002/health
-docker logs vinheria-dns                                         # consultas DNS e pedidos DHCP registrados
+docker logs vinheria-estacao                                  # IP, gateway e DNS recebidos por DHCP
+docker exec vinheria-estacao nslookup pedidos.vinheria.local  # nome do serviço -> IP
+docker logs vinheria-dns                                      # consultas DNS e pedidos DHCP registrados
 ```
 
 ---
@@ -119,20 +131,9 @@ $token = (curl.exe -s -k -X POST https://localhost:8443/auth/login -H "Content-T
 
 # 2. Registrar uma venda (o Pedidos consulta o Rastreamento antes)
 curl.exe -k -X POST https://localhost:8443/pedidos -H "Authorization: Bearer $token" -H "Content-Type: application/json" --data "@demo/pedido.json"
-
-# 3. Venda de um lote bloqueado pela qualidade
-curl.exe -k -X POST https://localhost:8443/pedidos -H "Authorization: Bearer $token" -H "Content-Type: application/json" --data "@demo/pedido-bloqueado.json"
-
-# 4. Login com senha errada
-curl.exe -k -X POST https://localhost:8443/auth/login -H "Content-Type: application/json" --data "@demo/login-errado.json"
 ```
 
-| Rota (Pedidos) | Acesso | Resposta |
-|---|---|---|
-| `POST /auth/login` | aberto | token JWT (ou **401** com senha errada) |
-| `GET /pedidos` | com token | lista de vendas |
-| `POST /pedidos` | com token | **201** registrada · **409** lote bloqueado ou sem estoque · **404** lote inexistente · **503** Rastreamento fora do ar |
-| `GET /health` | aberto | situação do serviço |
+Resposta esperada: **201** (venda registrada). Na pasta `demo/` também há exemplos de lote bloqueado (`pedido-bloqueado.json` → **409**) e senha errada (`login-errado.json` → **401**).
 
 O **Rastreamento** não tem porta aberta para fora: só o Pedidos chega nele, com um token de serviço que vale 2 minutos.
 
@@ -149,15 +150,7 @@ O **Rastreamento** não tem porta aberta para fora: só o Pedidos chega nele, co
    - **Script Path:** `Jenkinsfile`
 4. **Salvar** → **Construir agora**.
 
-| Etapa | O que faz |
-|---|---|
-| Checkout | Baixa a versão mais recente do repositório no GitHub |
-| Build | Mostra `Deploy da Vinheria`, instala as dependências e compila os serviços |
-| Testes | Roda os 11 testes automáticos |
-| Segurança | Confere se não há `.env` nem chave privada no repositório |
-| Deploy | Copia os serviços para `publicacao/releases/build-N` e atualiza a página |
-
-Ao terminar, http://localhost:8088 mostra o número do build, o commit e a data do deploy.
+Etapas: **Checkout → Build** (`echo "Deploy da Vinheria"`) **→ Testes → Segurança → Deploy**. Ao terminar, http://localhost:8088 mostra o número do build, o commit e a data do deploy.
 
 ---
 
